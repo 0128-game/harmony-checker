@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合唱ハーモニー分析（ピアノロール風・視覚化ツール）</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            padding: 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        h1 {
+            font-size: 22px;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        p.subtitle {
+            font-size: 14px;
+            color: #666;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #eef2f5;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .controls label {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .controls select, .controls button {
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        .controls button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .controls button:hover {
+            background-color: #2980b9;
+        }
+        /* Piano Roll Visualizer */
+        .piano-roll-container {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fafafa;
+        }
+        .beat-header {
+            display: grid;
+            grid-template-columns: 100px repeat(16, 1fr);
+            background-color: #34495e;
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+            text-align: center;
+            line-height: 35px;
+        }
+        .part-row {
+            display: grid;
+            grid-template-columns: 100px repeat(16, 1fr);
+            border-bottom: 1px solid #e0e0e0;
+            height: 50px;
+            align-items: center;
+        }
+        .part-row:last-child {
+            border-bottom: none;
+        }
+        .part-name {
+            font-weight: bold;
+            font-size: 14px;
+            padding-left: 10px;
+            background-color: #eaedd0;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            border-right: 2px solid #ccc;
+        }
+        .grid-cell {
+            height: 100%;
+            border-right: 1px dashed #e0e0e0;
+            position: relative;
+        }
+        .grid-cell.beat-line {
+            border-right: 2px solid #bdc3c7;
+        }
+        .note-block {
+            position: absolute;
+            top: 6px;
+            bottom: 6px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+            font-size: 13px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            z-height: 2;
+        }
+        /* Part Specific Colors */
+        .soprano-color { background-color: #ff6b6b; }
+        .alto-color { background-color: #4ecdc4; }
+        .tenor-color { background-color: #45b7d1; }
+        .bass-color { background-color: #96ceb4; color: #2c3e50; }
+
+        /* Summary Box */
+        .summary-card {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-left: 5px solid #3498db;
+            border-radius: 6px;
+        }
+        .summary-card h3 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        .summary-card p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #555;
+        }
+        .chord-tag {
+            display: inline-block;
+            background: #e74c3c;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎵 合唱ハーモニー分析・視覚化ツール</h1>
+        <p class="subtitle">五線譜の音と長さを「ピアノロール風の棒グラフ」に変換して分かりやすく分析できます</p>
+    </header>
+
+    <div class="container">
+        <div class="controls">
+            <label for="sample-select">例を選択:</label>
+            <select id="sample-select" onchange="loadSample()">
+                <option value="ex1">例1: さっきの小節（アルトが途中で動く例 - Bコード）</option>
+                <option value="ex2">例2: サスペンション（アルトが後から解決する例 - Cコード）</option>
+                <option value="ex3">例3: 全員で同じタイミングで動くきれいな和音（G7 → C）</option>
+            </select>
+        </div>
+
+        <div class="piano-roll-container">
+            <div class="beat-header">
+                <div>Part</div>
+                <div style="grid-column: span 4;">1拍目</div>
+                <div style="grid-column: span 4;">2拍目</div>
+                <div style="grid-column: span 4;">3拍目</div>
+                <div style="grid-column: span 4;">4拍目</div>
+            </div>
+
+            <!-- Soprano -->
+            <div class="part-row">
+                <div class="part-name">Soprano</div>
+                <div class="grid-cell" id="soprano-timeline" style="grid-column: span 16; position: relative;">
+                    <!-- Note blocks will be injected here -->
+                </div>
+            </div>
+
+            <!-- Alto -->
+            <div class="part-row">
+                <div class="part-name">Alto</div>
+                <div class="grid-cell" id="alto-timeline" style="grid-column: span 16; position: relative;"></div>
+            </div>
+
+            <!-- Tenor -->
+            <div class="part-row">
+                <div class="part-name">Tenor</div>
+                <div class="grid-cell" id="tenor-timeline" style="grid-column: span 16; position: relative;"></div>
+            </div>
+
+            <!-- Bass -->
+            <div class="part-row">
+                <div class="part-name">Bass</div>
+                <div class="grid-cell" id="bass-timeline" style="grid-column: span 16; position: relative;"></div>
+            </div>
+        </div>
+
+        <div class="summary-card" id="analysis-summary">
+            <!-- Dynamic summary text -->
+        </div>
+    </div>
+
+    <script>
+        const samples = {
+            ex1: {
+                summary: `<h3>和音分析の結果: <span class="chord-tag">B Major (シ - レ♯ - ファ♯)</span></h3>
+                          <p>・<strong>ソプラノ・テノール・バス</strong>は最初から最後まで長い音（付点2分音符相当）で伸ばしています。<br>
+                          ・<strong>アルト</strong>は途中でトコトコ動いていますが、3拍目の後半で着地する目標の音は<b>「レ♯」</b>です。<br>
+                          ・一瞬だけ通る音（経過音）を無視して、全員のメインの音を集めると<b>【シ・レ♯・ファ♯】</b>となり、全体として<strong>「B（ビー・メジャー）」</strong>のコードになります！</p>`,
+                notes: {
+                    soprano: [{ start: 0, length: 12, name: 'シ (B4)', class: 'soprano-color' }],
+                    alto: [
+                        { start: 0, length: 6, name: 'ソ♯', class: 'alto-color' },
+                        { start: 6, length: 2, name: 'ラ', class: 'alto-color' },
+                        { start: 8, length: 4, name: 'レ♯', class: 'alto-color' }
+                    ],
+                    tenor: [{ start: 0, length: 12, name: 'ファ♯ (F#4)', class: 'tenor-color' }],
+                    bass: [{ start: 0, length: 12, name: 'シ (B3)', class: 'bass-color' }]
+                }
+            },
+            ex2: {
+                summary: `<h3>和音分析の結果: <span class="chord-tag">C Major (ド - ミ - ソ)</span></h3>
+                          <p>・アルトが1拍目で<b>「ファ」</b>を出していますが、これはぶつかる音（係留音/サスペンション）です。<br>
+                          ・2拍目で<b>「ミ」</b>に移動して解決します。<br>
+                          ・骨組みの音を集めると<b>【ド・ミ・ソ】</b>になるため、小節全体としては<strong>「C（シー・メジャー）」</strong>になります！</p>`,
+                notes: {
+                    soprano: [{ start: 0, length: 16, name: 'ド (C5)', class: 'soprano-color' }],
+                    alto: [
+                        { start: 0, length: 4, name: 'ファ (飾り)', class: 'alto-color' },
+                        { start: 4, length: 12, name: 'ミ (着地)', class: 'alto-color' }
+                    ],
+                    tenor: [{ start: 0, length: 16, name: 'ソ (G4)', class: 'tenor-color' }],
+                    bass: [{ start: 0, length: 16, name: 'ド (C3)', class: 'bass-color' }]
+                }
+            },
+            ex3: {
+                summary: `<h3>和音分析の結果: <span class="chord-tag">G7 → C (ドミナント解決)</span></h3>
+                          <p>・1・2拍目は全員揃って<b>【ソ・シ・レ・ファ】</b>で<strong>「G7（ジー・セブン）」</strong>（緊張）。<br>
+                          ・3・4拍目で全員揃って<b>【ド・ミ・ソ】</b>で<strong>「C（シー・メジャー）」</strong>（安心・解決）に進行しています！</p>`,
+                notes: {
+                    soprano: [
+                        { start: 0, length: 8, name: 'ファ (F5)', class: 'soprano-color' },
+                        { start: 8, length: 8, name: 'ミ (E5)', class: 'soprano-color' }
+                    ],
+                    alto: [
+                        { start: 0, length: 8, name: 'シ (B4)', class: 'alto-color' },
+                        { start: 8, length: 8, name: 'ド (C5)', class: 'alto-color' }
+                    ],
+                    tenor: [
+                        { start: 0, length: 8, name: 'レ (D4)', class: 'tenor-color' },
+                        { start: 8, length: 8, name: 'ソ (G4)', class: 'tenor-color' }
+                    ],
+                    bass: [
+                        { start: 0, length: 8, name: 'ソ (G3)', class: 'bass-color' },
+                        { start: 8, length: 8, name: 'ド (C3)', class: 'bass-color' }
+                    ]
+                }
+            }
+        };
+
+        function renderTimeline(elementId, noteList) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            noteList.forEach(note => {
+                const div = document.createElement('div');
+                div.className = `note-block ${note.class}`;
+                // 16 units total
+                const leftPercent = (note.start / 16) * 100;
+                const widthPercent = (note.length / 16) * 100;
+                div.style.left = `${leftPercent}%`;
+                div.style.width = `calc(${widthPercent}% - 4px)`;
+                div.style.marginLeft = '2px';
+                div.innerText = note.name;
+                container.appendChild(div);
+            });
+        }
+
+        function loadSample() {
+            const selectedKey = document.getElementById('sample-select').value;
+            const data = samples[selectedKey];
+
+            document.getElementById('analysis-summary').innerHTML = data.summary;
+            renderTimeline('soprano-timeline', data.notes.soprano);
+            renderTimeline('alto-timeline', data.notes.alto);
+            renderTimeline('tenor-timeline', data.notes.tenor);
+            renderTimeline('bass-timeline', data.notes.bass);
+        }
+
+        // Initial Load
+        loadSample();
+    </script>
+</body>
+</html>
