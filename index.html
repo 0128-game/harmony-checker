@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>合唱ハーモニー可視化＆分析エディター v2</title>
+    <title>高速キーボード操作対応！合唱ハーモニーエディター v3</title>
     <style>
         * {
             box-sizing: border-box;
@@ -11,260 +11,253 @@
             padding: 0;
         }
         body {
-            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-            background-color: #f0f4f8;
-            color: #2c3e50;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Hiragino Sans', 'Meiryo';
+            background-color: #f0f3f6;
+            color: #1a252f;
+            padding: 15px;
         }
         header {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             background: #ffffff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         h1 {
-            font-size: 22px;
-            color: #1a252f;
-            margin-bottom: 6px;
+            font-size: 20px;
+            color: #2c3e50;
+            margin-bottom: 4px;
         }
         p.subtitle {
-            font-size: 13px;
+            font-size: 12px;
             color: #666;
         }
-        .main-layout {
-            display: grid;
-            grid-template-columns: 1fr 340px;
-            gap: 20px;
+        .container {
             max-width: 1200px;
             margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 15px;
         }
-        @media (max-width: 900px) {
-            .main-layout {
+        @media (max-width: 960px) {
+            .container {
                 grid-template-columns: 1fr;
             }
         }
         .card {
             background: #ffffff;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
         .card-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #eef2f5;
-            color: #34495e;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #edf2f7;
+            color: #2d3748;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        
-        /* Piano Roll Style */
-        .piano-roll-container {
-            border: 2px solid #dcdfe6;
+
+        /* Status & Keymap Header */
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            background: #2b6cb0;
+            color: white;
+            padding: 10px 15px;
             border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            flex-wrap: wrap;
+        }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .status-val {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        /* Piano Roll Visualizer */
+        .piano-roll-container {
+            border: 2px solid #cbd5e0;
+            border-radius: 6px;
             overflow: hidden;
-            background: #fafbfc;
+            background: #f8fafc;
         }
         .beat-header {
             display: grid;
-            grid-template-columns: 90px repeat(16, 1fr);
-            background-color: #2c3e50;
+            grid-template-columns: 80px repeat(16, 1fr);
+            background-color: #1a202c;
             color: white;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
             text-align: center;
-            line-height: 36px;
+            line-height: 32px;
         }
         .part-row {
             display: grid;
-            grid-template-columns: 90px repeat(16, 1fr);
-            border-bottom: 1px solid #e6ebf5;
-            height: 52px;
+            grid-template-columns: 80px repeat(16, 1fr);
+            border-bottom: 1px solid #e2e8f0;
+            height: 48px;
             align-items: center;
             position: relative;
         }
-        .part-row:last-child {
-            border-bottom: none;
+        .part-row.active-part {
+            background-color: #ebf8ff;
         }
         .part-name {
             font-weight: bold;
-            font-size: 13px;
-            padding-left: 12px;
-            background-color: #f2f5f8;
+            font-size: 12px;
+            padding-left: 8px;
+            background-color: #edf2f7;
             height: 100%;
             display: flex;
             align-items: center;
-            border-right: 2px solid #dcdfe6;
-            color: #34495e;
+            border-right: 2px solid #cbd5e0;
+            color: #4a5568;
+        }
+        .part-row.active-part .part-name {
+            background-color: #3182ce;
+            color: white;
         }
         .grid-cell-container {
             grid-column: span 16;
             height: 100%;
             position: relative;
-            display: grid;
-            grid-template-columns: repeat(16, 1fr);
         }
         .grid-cell {
-            height: 100%;
-            border-right: 1px dashed #e6ebf5;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            border-right: 1px dashed #e2e8f0;
         }
         .grid-cell.beat-line {
-            border-right: 2px solid #cbd5e1;
+            border-right: 2px solid #cbd5e0;
         }
         .note-block {
             position: absolute;
-            top: 6px;
-            bottom: 6px;
-            border-radius: 6px;
+            top: 5px;
+            bottom: 5px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
             font-weight: bold;
-            font-size: 13px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-            transition: all 0.2s ease;
+            font-size: 11px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
             z-index: 2;
+            overflow: hidden;
+            white-space: nowrap;
         }
-        .note-block:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        .soprano-bg { background-color: #e53e3e; }
+        .alto-bg { background-color: #319795; }
+        .tenor-bg { background-color: #3182ce; }
+        .bass-bg { background-color: #805ad5; }
+        .rest-block {
+            background-color: #a0aec0;
+            opacity: 0.6;
         }
-        
-        /* Part Colors */
-        .soprano-bg { background-color: #ff5252; }
-        .alto-bg { background-color: #00b894; }
-        .tenor-bg { background-color: #0984e3; }
-        .bass-bg { background-color: #6c5ce7; }
 
-        /* Form Controls */
-        .form-group {
-            margin-bottom: 14px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #4a5568;
-        }
-        .form-control {
-            width: 100%;
-            padding: 8px 12px;
-            font-size: 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            background: #fff;
-            outline: none;
-            transition: border 0.2s;
-        }
-        .form-control:focus {
-            border-color: #3182ce;
-        }
-        .btn {
-            width: 100%;
-            padding: 10px;
-            font-size: 14px;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-bottom: 8px;
-        }
-        .btn-primary {
-            background-color: #3182ce;
-            color: white;
-        }
-        .btn-primary:hover {
-            background-color: #2b6cb0;
-        }
-        .btn-danger {
+        /* Cursor Indicator */
+        .time-cursor {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 3px;
             background-color: #e53e3e;
-            color: white;
-        }
-        .btn-danger:hover {
-            background-color: #c53030;
-        }
-        .btn-secondary {
-            background-color: #edf2f7;
-            color: #4a5568;
-        }
-        .btn-secondary:hover {
-            background-color: #e2e8f0;
+            z-index: 10;
+            pointer-events: none;
         }
 
-        /* Note List Table */
-        .note-list-container {
-            max-height: 220px;
-            overflow-y: auto;
-            border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
-        .note-table {
+        /* Keyboard Cheat Sheet Table */
+        .key-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 12px;
+            margin-bottom: 12px;
         }
-        .note-table th, .note-table td {
+        .key-table th, .key-table td {
             padding: 6px 8px;
-            text-align: left;
             border-bottom: 1px solid #edf2f7;
+            text-align: left;
         }
-        .note-table th {
-            background-color: #f7fafc;
-            color: #718096;
-            position: sticky;
-            top: 0;
+        .key-table th {
+            background: #f7fafc;
+            color: #4a5568;
         }
-        .btn-del {
-            background: #fed7d7;
-            color: #9b2c2c;
-            border: none;
-            padding: 2px 6px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-        }
-        .btn-del:hover {
-            background: #feb2b2;
+        kbd {
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-radius: 3px;
+            padding: 1px 5px;
+            font-family: monospace;
+            font-weight: bold;
+            color: #2d3748;
         }
 
-        /* Instructions Box */
-        .instructions {
-            margin-top: 20px;
-            background: #ebf8ff;
-            border-left: 4px solid #3182ce;
-            padding: 12px 15px;
+        /* Form Controls & Buttons */
+        .btn {
+            width: 100%;
+            padding: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 6px;
+        }
+        .btn-danger { background-color: #e53e3e; color: white; }
+        .btn-secondary { background-color: #edf2f7; color: #4a5568; }
+
+        .note-list-box {
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
             border-radius: 4px;
-            font-size: 13px;
-            line-height: 1.6;
-            color: #2b6cb0;
+            font-size: 11px;
+        }
+        .note-list-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .note-list-table th, .note-list-table td {
+            padding: 4px 6px;
+            border-bottom: 1px solid #edf2f7;
         }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>🎶 合唱ハーモニー分析・ピアノロールエディター</h1>
-        <p class="subtitle">自分で音と長さを自由に追加・変更して、複雑なハーモニーを視覚化してみよう！</p>
+        <h1>⚡ 高速キーボード操作対応！合唱ハーモニーエディター v3</h1>
+        <p class="subtitle">画面をカチカチしなくてOK！キーボードだけで爆速入力できます</p>
     </header>
 
-    <div class="main-layout">
-        <!-- Main Visualization Area -->
+    <div class="container">
+        <!-- Main Area -->
         <div class="left-col">
             <div class="card">
-                <div class="card-title">
-                    <span>音の重なり＆長さ（ピアノロール）</span>
-                    <span style="font-size:12px; font-weight:normal; color:#718096;">※4/4拍子 (1小節 = 4拍)</span>
+                <!-- Status Bar -->
+                <div class="status-bar">
+                    <div class="status-item">パート: <span id="st-part" class="status-val">Soprano [↑↓で切替]</span></div>
+                    <div class="status-item">音の長さ: <span id="st-dur" class="status-val">4分音符 (1.0拍)</span></div>
+                    <div class="status-item">現在位置: <span id="st-pos" class="status-val">0.0 拍目</span></div>
+                    <div class="status-item">連符設定: <span id="st-tuplet" class="status-val">通常 (1倍)</span></div>
                 </div>
 
+                <!-- Piano Roll -->
                 <div class="piano-roll-container">
                     <div class="beat-header">
                         <div>Part</div>
@@ -275,104 +268,79 @@
                     </div>
 
                     <!-- Soprano -->
-                    <div class="part-row">
+                    <div class="part-row" id="row-soprano">
                         <div class="part-name">Soprano</div>
                         <div class="grid-cell-container" id="soprano-container"></div>
                     </div>
 
                     <!-- Alto -->
-                    <div class="part-row">
+                    <div class="part-row" id="row-alto">
                         <div class="part-name">Alto</div>
                         <div class="grid-cell-container" id="alto-container"></div>
                     </div>
 
                     <!-- Tenor -->
-                    <div class="part-row">
+                    <div class="part-row" id="row-tenor">
                         <div class="part-name">Tenor</div>
                         <div class="grid-cell-container" id="tenor-container"></div>
                     </div>
 
                     <!-- Bass -->
-                    <div class="part-row">
+                    <div class="part-row" id="row-bass">
                         <div class="part-name">Bass</div>
                         <div class="grid-cell-container" id="bass-container"></div>
                     </div>
                 </div>
 
-                <div class="instructions">
-                    💡 <strong>使い方ガイド:</strong><br>
-                    1. 右側のパネルで **「パート」「音名」「開始拍」「長さ」** を指定して「音を追加」ボタンを押します。<br>
-                    2. **開始拍の目安:** 1拍目の頭 = <code>0</code>, 2拍目の頭 = <code>1</code>, 3拍目の頭 = <code>2</code>, 4拍目の頭 = <code>3</code> (0.5刻みもOK)<br>
-                    3. **長さの目安:** 4分音符 = <code>1</code>, 8分音符 = <code>0.5</code>, 付点4分音符 = <code>1.5</code>, 2分音符 = <code>2</code>, 付点2分音符 = <code>3</code>
+                <div style="margin-top: 15px; font-size: 12px; color: #4a5568; background: #fffaf0; border-left: 4px solid #dd6b20; padding: 10px; border-radius: 4px;">
+                    📌 <strong>入力の流れ（キーボードだけ！）:</strong><br>
+                    ① <kbd>↑</kbd> <kbd>↓</kbd> でパートを選ぶ ➔ 
+                    ② 音の長さを選ぶ（例: <kbd>q</kbd> で4分音符, <kbd>d</kbd> で付点化） ➔ 
+                    ③ 音を入力（例: <kbd>1</kbd>=ド, <kbd>s</kbd>=シャープ追加, <kbd>0</kbd>=休符）<br>
+                    ※音を入力すると自動的に次の拍へカーソルが移動します！
                 </div>
             </div>
         </div>
 
-        <!-- Controls Sidebar -->
+        <!-- Keyboard Controls Guide & Management -->
         <div class="right-col">
             <div class="card">
-                <div class="card-title">音の入力・追加</div>
-                
-                <div class="form-group">
-                    <label for="part-select">パート</label>
-                    <select id="part-select" class="form-control">
-                        <option value="soprano">Soprano (ソプラノ)</option>
-                        <option value="alto">Alto (アルト)</option>
-                        <option value="tenor">Tenor (テノール)</option>
-                        <option value="bass">Bass (バス)</option>
-                    </select>
-                </div>
+                <div class="card-title">⌨️ キーボード操作コマンド一覧</div>
 
-                <div class="form-group">
-                    <label for="note-name">音名 (例: シ, レ#, F#4 など)</label>
-                    <input type="text" id="note-name" class="form-control" placeholder="例: レ#" value="ド">
-                </div>
+                <table class="key-table">
+                    <tr><th colspan="2">1. パート選択</th></tr>
+                    <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>パート切替 (Sop / Alt / Ten / Bas)</td></tr>
 
-                <div class="form-group">
-                    <label for="start-beat">開始拍 (0 ～ 3.5拍)</label>
-                    <select id="start-beat" class="form-control">
-                        <option value="0">1拍目の頭 (0.0)</option>
-                        <option value="0.5">1拍目の裏 (0.5)</option>
-                        <option value="1">2拍目の頭 (1.0)</option>
-                        <option value="1.5">2拍目の裏 (1.5)</option>
-                        <option value="2">3拍目の頭 (2.0)</option>
-                        <option value="2.5">3拍目の裏 (2.5)</option>
-                        <option value="3">4拍目の頭 (3.0)</option>
-                        <option value="3.5">4拍目の裏 (3.5)</option>
-                    </select>
-                </div>
+                    <tr><th colspan="2">2. 長さの指定</th></tr>
+                    <tr><td><kbd>w</kbd> / <kbd>e</kbd> / <kbd>q</kbd> / <kbd>a</kbd> / <kbd>z</kbd></td><td>全音符 / 2分 / 4分 / 8分 / 16分音符</td></tr>
+                    <tr><td><kbd>d</kbd></td><td>付点 ON/OFF 切り替え</td></tr>
+                    <tr><td><kbd>t</kbd></td><td>3連符 ON/OFF 切り替え (長さを2/3倍)</td></tr>
 
-                <div class="form-group">
-                    <label for="note-length">伸ばす長さ (拍数)</label>
-                    <select id="note-length" class="form-control">
-                        <option value="0.5">8分音符 (0.5拍)</option>
-                        <option value="1" selected>4分音符 (1.0拍)</option>
-                        <option value="1.5">付点4分音符 (1.5拍)</option>
-                        <option value="2">2分音符 (2.0拍)</option>
-                        <option value="3">付点2分音符 (3.0拍)</option>
-                        <option value="4">全音符 (4.0拍)</option>
-                    </select>
-                </div>
+                    <tr><th colspan="2">3. 音の指定＆入力</th></tr>
+                    <tr><td><kbd>1</kbd> ～ <kbd>7</kbd></td><td>ド, レ, ミ, ファ, ソ, ラ, シ</td></tr>
+                    <tr><td><kbd>s</kbd> / <kbd>f</kbd></td><td>最後に打ち込んだ音に ＃ / ♭ を付与</td></tr>
+                    <tr><td><kbd>0</kbd></td><td>休符を入れる（カーソルを進める）</td></tr>
 
-                <button class="btn btn-primary" onclick="addNote()">＋ 音を追加する</button>
-                <button class="btn btn-secondary" onclick="loadSampleData()">サンプル(Bコード)を読み込む</button>
-                <button class="btn btn-danger" onclick="clearAllNotes()">全消去</button>
+                    <tr><th colspan="2">4. 位置・操作</th></tr>
+                    <tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>カーソル移動（小節内の位置変更）</td></tr>
+                    <tr><td><kbd>Backspace</kbd></td><td>1つ前の音を消去して戻る</td></tr>
+                </table>
 
-                <div class="card-title" style="margin-top: 20px;">登録済みノート一覧</div>
-                <div class="note-list-container">
-                    <table class="note-table">
+                <button class="btn btn-secondary" onclick="resetCursor()">カーソルを頭(0拍)に戻す</button>
+                <button class="btn btn-danger" onclick="clearAll()">全データ消去</button>
+
+                <div class="card-title" style="margin-top: 15px;">登録済みデータ</div>
+                <div class="note-list-box">
+                    <table class="note-list-table">
                         <thead>
                             <tr>
                                 <th>Part</th>
                                 <th>音</th>
                                 <th>開始</th>
                                 <th>長さ</th>
-                                <th>操作</th>
                             </tr>
                         </thead>
-                        <tbody id="note-list-body">
-                            <!-- Items inserted dynamically -->
-                        </tbody>
+                        <tbody id="note-table-body"></tbody>
                     </table>
                 </div>
             </div>
@@ -380,127 +348,263 @@
     </div>
 
     <script>
-        // Default Notes (B Major example)
-        let notesData = [
-            { id: 1, part: 'soprano', name: 'シ', start: 0, length: 3 },
-            { id: 2, part: 'alto', name: 'ソ♯', start: 0, length: 1.5 },
-            { id: 3, part: 'alto', name: 'ラ', start: 1.5, length: 0.5 },
-            { id: 4, part: 'alto', name: 'レ♯', start: 2, length: 1 },
-            { id: 5, part: 'tenor', name: 'ファ♯', start: 0, length: 3 },
-            { id: 6, part: 'bass', name: 'シ', start: 0, length: 3 }
-        ];
+        const parts = ['soprano', 'alto', 'tenor', 'bass'];
+        let currentPartIdx = 0;
+        let currentPos = { soprano: 0, alto: 0, tenor: 0, bass: 0 };
 
-        let nextId = 7;
-
-        const partClasses = {
-            soprano: 'soprano-bg',
-            alto: 'alto-bg',
-            tenor: 'tenor-bg',
-            bass: 'bass-bg'
+        // Base lengths in beat count (4/4 time)
+        const baseLengths = {
+            'w': { name: '全音符', len: 4.0 },
+            'e': { name: '2分音符', len: 2.0 },
+            'q': { name: '4分音符', len: 1.0 },
+            'a': { name: '8分音符', len: 0.5 },
+            'z': { name: '16分音符', len: 0.25 }
         };
 
-        function renderGridBackground(containerId) {
+        let currentBaseKey = 'q'; // Default 4分音符
+        let isDotted = false;
+        let isTuplet = false;
+
+        const noteMap = {
+            '1': 'ド',
+            '2': 'レ',
+            '3': 'ミ',
+            '4': 'ファ',
+            '5': 'ソ',
+            '6': 'ラ',
+            '7': 'シ'
+        };
+
+        let notesData = [];
+        let noteId = 1;
+
+        function getCalculatedLength() {
+            let base = baseLengths[currentBaseKey].len;
+            if (isDotted) base *= 1.5;
+            if (isTuplet) base *= (2 / 3); // 3連符の場合
+            return base;
+        }
+
+        function updateStatusUI() {
+            // Update Part Highlight
+            parts.forEach((p, idx) => {
+                const row = document.getElementById(`row-${p}`);
+                if (idx === currentPartIdx) {
+                    row.classList.add('active-part');
+                } else {
+                    row.classList.remove('active-part');
+                }
+            });
+
+            const pName = parts[currentPartIdx].toUpperCase();
+            document.getElementById('st-part').innerText = pName;
+
+            let durStr = baseLengths[currentBaseKey].name;
+            if (isDotted) durStr += ' (付点)';
+            if (isTuplet) durStr += ' [3連符]';
+            durStr += ` -> ${getCalculatedLength().toFixed(3)}拍`;
+            document.getElementById('st-dur').innerText = durStr;
+
+            const cPos = currentPos[parts[currentPartIdx]];
+            document.getElementById('st-pos').innerText = `${cPos.toFixed(2)} 拍目`;
+            document.getElementById('st-tuplet').innerText = isTuplet ? '3連符モード (2/3長)' : '通常';
+        }
+
+        function renderGrid(containerId) {
             const container = document.getElementById(containerId);
             container.innerHTML = '';
+
+            // 16 subdivisions background
             for (let i = 0; i < 16; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell' + ((i + 1) % 4 === 0 ? ' beat-line' : '');
+                cell.style.left = `${(i / 16) * 100}%`;
+                cell.style.width = `${(1 / 16) * 100}%`;
                 container.appendChild(cell);
             }
         }
 
         function renderAll() {
-            // Render Grids
-            ['soprano', 'alto', 'tenor', 'bass'].forEach(part => {
-                renderGridBackground(`${part}-container`);
-            });
+            parts.forEach(p => renderGrid(`${p}-container`));
 
-            // Render Notes
-            notesData.forEach(note => {
-                const container = document.getElementById(`${note.part}-container`);
+            notesData.forEach(n => {
+                const container = document.getElementById(`${n.part}-container`);
                 if (!container) return;
 
-                const noteDiv = document.createElement('div');
-                noteDiv.className = `note-block ${partClasses[note.part]}`;
+                const div = document.createElement('div');
+                div.className = `note-block ${n.isRest ? 'rest-block' : n.part + '-bg'}`;
                 
-                // Calculate position (16 grid units total for 4 beats)
-                const leftPercent = (note.start / 4) * 100;
-                const widthPercent = (note.length / 4) * 100;
+                const leftPct = (n.start / 4) * 100;
+                const widthPct = (n.length / 4) * 100;
 
-                noteDiv.style.left = `${leftPercent}%`;
-                noteDiv.style.width = `calc(${widthPercent}% - 4px)`;
-                noteDiv.style.marginLeft = '2px';
-                noteDiv.innerText = note.name;
-                noteDiv.title = `${note.part.toUpperCase()}: ${note.name} (開始: ${note.start}拍, 長さ: ${note.length}拍)`;
+                div.style.left = `${leftPct}%`;
+                div.style.width = `calc(${widthPct}% - 2px)`;
+                div.innerText = n.name;
+                container.appendChild(div);
+            });
 
-                container.appendChild(noteDiv);
+            // Draw Cursors
+            parts.forEach(p => {
+                const container = document.getElementById(`${p}-container`);
+                const cursor = document.createElement('div');
+                cursor.className = 'time-cursor';
+                cursor.style.left = `${(currentPos[p] / 4) * 100}%`;
+                container.appendChild(cursor);
             });
 
             // Render Table
-            const tableBody = document.getElementById('note-list-body');
-            tableBody.innerHTML = '';
-            notesData.forEach(note => {
+            const tbody = document.getElementById('note-table-body');
+            tbody.innerHTML = '';
+            notesData.forEach(n => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><strong>${note.part[0].toUpperCase() + note.part.slice(1, 3)}</strong></td>
-                    <td>${note.name}</td>
-                    <td>${note.start}拍</td>
-                    <td>${note.length}拍</td>
-                    <td><button class="btn-del" onclick="deleteNote(${note.id})">削除</button></td>
+                    <td><b>${n.part[0].toUpperCase()}</b></td>
+                    <td>${n.name}</td>
+                    <td>${n.start.toFixed(2)}</td>
+                    <td>${n.length.toFixed(2)}</td>
                 `;
-                tableBody.appendChild(tr);
+                tbody.appendChild(tr);
             });
+
+            updateStatusUI();
         }
 
-        function addNote() {
-            const part = document.getElementById('part-select').value;
-            const name = document.getElementById('note-name').value.trim();
-            const start = parseFloat(document.getElementById('start-beat').value);
-            const length = parseFloat(document.getElementById('note-length').value);
+        // Global Keyboard Handler
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            const activePart = parts[currentPartIdx];
 
-            if (!name) {
-                alert('音名を入力してください！');
+            // 1. Part Switch
+            if (e.key === 'ArrowUp') {
+                currentPartIdx = (currentPartIdx - 1 + 4) % 4;
+                updateStatusUI();
+                renderAll();
+                e.preventDefault();
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                currentPartIdx = (currentPartIdx + 1) % 4;
+                updateStatusUI();
+                renderAll();
+                e.preventDefault();
                 return;
             }
 
-            if (start + length > 4) {
-                alert('注意: 1小節(4拍)からはみ出ています。少し長さを短く調整してください。');
+            // 2. Cursor Move
+            if (e.key === 'ArrowLeft') {
+                currentPos[activePart] = Math.max(0, currentPos[activePart] - 0.25);
+                renderAll();
+                e.preventDefault();
+                return;
+            }
+            if (e.key === 'ArrowRight') {
+                currentPos[activePart] = Math.min(4, currentPos[activePart] + 0.25);
+                renderAll();
+                e.preventDefault();
+                return;
             }
 
-            notesData.push({
-                id: nextId++,
-                part: part,
-                name: name,
-                start: start,
-                length: length
-            });
+            // 3. Length Keys
+            if (['w', 'e', 'q', 'a', 'z'].includes(key)) {
+                currentBaseKey = key;
+                updateStatusUI();
+                return;
+            }
+            if (key === 'd') {
+                isDotted = !isDotted;
+                updateStatusUI();
+                return;
+            }
+            if (key === 't') {
+                isTuplet = !isTuplet;
+                updateStatusUI();
+                return;
+            }
 
+            // 4. Note Input (1-7)
+            if (noteMap[key]) {
+                const noteName = noteMap[key];
+                const len = getCalculatedLength();
+                const start = currentPos[activePart];
+
+                if (start + len > 4.01) {
+                    alert('小節（4拍）をオーバーします！長さを変更するか位置を調整してください。');
+                    return;
+                }
+
+                notesData.push({
+                    id: noteId++,
+                    part: activePart,
+                    name: noteName,
+                    start: start,
+                    length: len,
+                    isRest: false
+                });
+
+                currentPos[activePart] += len;
+                renderAll();
+                return;
+            }
+
+            // 5. Rest Input (0)
+            if (key === '0') {
+                const len = getCalculatedLength();
+                const start = currentPos[activePart];
+
+                notesData.push({
+                    id: noteId++,
+                    part: activePart,
+                    name: '休',
+                    start: start,
+                    length: len,
+                    isRest: true
+                });
+
+                currentPos[activePart] += len;
+                renderAll();
+                return;
+            }
+
+            // 6. Accidental Modify (s -> #, f -> b)
+            if (key === 's' || key === 'f') {
+                // Find last non-rest note for active part
+                const partNotes = notesData.filter(n => n.part === activePart && !n.isRest);
+                if (partNotes.length > 0) {
+                    const lastNote = partNotes[partNotes.length - 1];
+                    if (key === 's' && !lastNote.name.includes('#')) {
+                        lastNote.name += '#';
+                    } else if (key === 'f' && !lastNote.name.includes('♭')) {
+                        lastNote.name += '♭';
+                    }
+                    renderAll();
+                }
+                return;
+            }
+
+            // 7. Backspace Delete
+            if (e.key === 'Backspace') {
+                const partNotes = notesData.filter(n => n.part === activePart);
+                if (partNotes.length > 0) {
+                    const lastNote = partNotes[partNotes.length - 1];
+                    currentPos[activePart] = lastNote.start;
+                    notesData = notesData.filter(n => n.id !== lastNote.id);
+                    renderAll();
+                }
+                e.preventDefault();
+            }
+        });
+
+        function resetCursor() {
+            currentPos[parts[currentPartIdx]] = 0;
             renderAll();
         }
 
-        function deleteNote(id) {
-            notesData = notesData.filter(note => note.id !== id);
-            renderAll();
-        }
-
-        function clearAllNotes() {
-            if (confirm('すべての音データを消去しますか？')) {
+        function clearAll() {
+            if (confirm('すべての音データを削除しますか？')) {
                 notesData = [];
+                parts.forEach(p => currentPos[p] = 0);
                 renderAll();
             }
-        }
-
-        function loadSampleData() {
-            notesData = [
-                { id: 1, part: 'soprano', name: 'シ', start: 0, length: 3 },
-                { id: 2, part: 'alto', name: 'ソ♯', start: 0, length: 1.5 },
-                { id: 3, part: 'alto', name: 'ラ', start: 1.5, length: 0.5 },
-                { id: 4, part: 'alto', name: 'レ♯', start: 2, length: 1 },
-                { id: 5, part: 'tenor', name: 'ファ♯', start: 0, length: 3 },
-                { id: 6, part: 'bass', name: 'シ', start: 0, length: 3 }
-            ];
-            nextId = 7;
-            renderAll();
         }
 
         // Initial Setup
