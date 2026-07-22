@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>高速キーボード操作対応！合唱ハーモニーエディター v3</title>
+    <title>高速キーボード操作対応！合唱ハーモニーエディター v4</title>
     <style>
         * {
             box-sizing: border-box;
@@ -37,7 +37,7 @@
             max-width: 1200px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 1fr 320px;
+            grid-template-columns: 1fr 340px;
             gap: 15px;
         }
         @media (max-width: 960px) {
@@ -241,8 +241,8 @@
 <body>
 
     <header>
-        <h1>⚡ 高速キーボード操作対応！合唱ハーモニーエディター v3</h1>
-        <p class="subtitle">画面をカチカチしなくてOK！キーボードだけで爆速入力できます</p>
+        <h1>⚡ 高速キーボード操作対応！合唱ハーモニーエディター v4</h1>
+        <p class="subtitle">シャープ・フラットのトグル操作（1回:♯/♭ ➔ 2回:𝄪/𝄠 ➔ 3回:取り消し）に対応しました！</p>
     </header>
 
     <div class="container">
@@ -293,11 +293,9 @@
                 </div>
 
                 <div style="margin-top: 15px; font-size: 12px; color: #4a5568; background: #fffaf0; border-left: 4px solid #dd6b20; padding: 10px; border-radius: 4px;">
-                    📌 <strong>入力の流れ（キーボードだけ！）:</strong><br>
-                    ① <kbd>↑</kbd> <kbd>↓</kbd> でパートを選ぶ ➔ 
-                    ② 音の長さを選ぶ（例: <kbd>q</kbd> で4分音符, <kbd>d</kbd> で付点化） ➔ 
-                    ③ 音を入力（例: <kbd>1</kbd>=ド, <kbd>s</kbd>=シャープ追加, <kbd>0</kbd>=休符）<br>
-                    ※音を入力すると自動的に次の拍へカーソルが移動します！
+                    📌 <strong>変化記号の連打ルール:</strong><br>
+                    ・<kbd>s</kbd> を押す: なし ➔ <strong>♯ (シングル)</strong> ➔ <strong>𝄪 (ダブルシャープ)</strong> ➔ <strong>なし (消去)</strong><br>
+                    ・<kbd>f</kbd> を押す: なし ➔ <strong>♭ (シングル)</strong> ➔ <strong>𝄠 (ダブルフラット)</strong> ➔ <strong>なし (消去)</strong>
                 </div>
             </div>
         </div>
@@ -316,9 +314,10 @@
                     <tr><td><kbd>d</kbd></td><td>付点 ON/OFF 切り替え</td></tr>
                     <tr><td><kbd>t</kbd></td><td>3連符 ON/OFF 切り替え (長さを2/3倍)</td></tr>
 
-                    <tr><th colspan="2">3. 音の指定＆入力</th></tr>
+                    <tr><th colspan="2">3. 音の指定＆トグル変化記号</th></tr>
                     <tr><td><kbd>1</kbd> ～ <kbd>7</kbd></td><td>ド, レ, ミ, ファ, ソ, ラ, シ</td></tr>
-                    <tr><td><kbd>s</kbd> / <kbd>f</kbd></td><td>最後に打ち込んだ音に ＃ / ♭ を付与</td></tr>
+                    <tr><td><kbd>s</kbd> (シャープ)</td><td>1回: ♯ / 2回: 𝄪 (ダブル) / 3回: 取消</td></tr>
+                    <tr><td><kbd>f</kbd> (フラット)</td><td>1回: ♭ / 2回: 𝄠 (ダブル) / 3回: 取消</td></tr>
                     <tr><td><kbd>0</kbd></td><td>休符を入れる（カーソルを進める）</td></tr>
 
                     <tr><th colspan="2">4. 位置・操作</th></tr>
@@ -352,7 +351,6 @@
         let currentPartIdx = 0;
         let currentPos = { soprano: 0, alto: 0, tenor: 0, bass: 0 };
 
-        // Base lengths in beat count (4/4 time)
         const baseLengths = {
             'w': { name: '全音符', len: 4.0 },
             'e': { name: '2分音符', len: 2.0 },
@@ -361,18 +359,18 @@
             'z': { name: '16分音符', len: 0.25 }
         };
 
-        let currentBaseKey = 'q'; // Default 4分音符
+        let currentBaseKey = 'q';
         let isDotted = false;
         let isTuplet = false;
 
         const noteMap = {
-            '1': 'ド',
-            '2': 'レ',
-            '3': 'ミ',
-            '4': 'ファ',
-            '5': 'ソ',
-            '6': 'ラ',
-            '7': 'シ'
+            '1': { base: 'ド' },
+            '2': { base: 'レ' },
+            '3': { base: 'ミ' },
+            '4': { base: 'ファ' },
+            '5': { base: 'ソ' },
+            '6': { base: 'ラ' },
+            '7': { base: 'シ' }
         };
 
         let notesData = [];
@@ -381,12 +379,11 @@
         function getCalculatedLength() {
             let base = baseLengths[currentBaseKey].len;
             if (isDotted) base *= 1.5;
-            if (isTuplet) base *= (2 / 3); // 3連符の場合
+            if (isTuplet) base *= (2 / 3);
             return base;
         }
 
         function updateStatusUI() {
-            // Update Part Highlight
             parts.forEach((p, idx) => {
                 const row = document.getElementById(`row-${p}`);
                 if (idx === currentPartIdx) {
@@ -414,7 +411,6 @@
             const container = document.getElementById(containerId);
             container.innerHTML = '';
 
-            // 16 subdivisions background
             for (let i = 0; i < 16; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'grid-cell' + ((i + 1) % 4 === 0 ? ' beat-line' : '');
@@ -422,6 +418,16 @@
                 cell.style.width = `${(1 / 16) * 100}%`;
                 container.appendChild(cell);
             }
+        }
+
+        function getDisplayName(n) {
+            if (n.isRest) return '休';
+            let acc = '';
+            if (n.accidental === 'sharp') acc = '♯';
+            else if (n.accidental === 'double-sharp') acc = '𝄪';
+            else if (n.accidental === 'flat') acc = '♭';
+            else if (n.accidental === 'double-flat') acc = '𝄠';
+            return n.baseName + acc;
         }
 
         function renderAll() {
@@ -439,11 +445,10 @@
 
                 div.style.left = `${leftPct}%`;
                 div.style.width = `calc(${widthPct}% - 2px)`;
-                div.innerText = n.name;
+                div.innerText = getDisplayName(n);
                 container.appendChild(div);
             });
 
-            // Draw Cursors
             parts.forEach(p => {
                 const container = document.getElementById(`${p}-container`);
                 const cursor = document.createElement('div');
@@ -452,14 +457,13 @@
                 container.appendChild(cursor);
             });
 
-            // Render Table
             const tbody = document.getElementById('note-table-body');
             tbody.innerHTML = '';
             notesData.forEach(n => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><b>${n.part[0].toUpperCase()}</b></td>
-                    <td>${n.name}</td>
+                    <td>${getDisplayName(n)}</td>
                     <td>${n.start.toFixed(2)}</td>
                     <td>${n.length.toFixed(2)}</td>
                 `;
@@ -469,12 +473,10 @@
             updateStatusUI();
         }
 
-        // Global Keyboard Handler
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             const activePart = parts[currentPartIdx];
 
-            // 1. Part Switch
             if (e.key === 'ArrowUp') {
                 currentPartIdx = (currentPartIdx - 1 + 4) % 4;
                 updateStatusUI();
@@ -490,7 +492,6 @@
                 return;
             }
 
-            // 2. Cursor Move
             if (e.key === 'ArrowLeft') {
                 currentPos[activePart] = Math.max(0, currentPos[activePart] - 0.25);
                 renderAll();
@@ -504,7 +505,6 @@
                 return;
             }
 
-            // 3. Length Keys
             if (['w', 'e', 'q', 'a', 'z'].includes(key)) {
                 currentBaseKey = key;
                 updateStatusUI();
@@ -521,21 +521,21 @@
                 return;
             }
 
-            // 4. Note Input (1-7)
             if (noteMap[key]) {
-                const noteName = noteMap[key];
+                const baseName = noteMap[key].base;
                 const len = getCalculatedLength();
                 const start = currentPos[activePart];
 
                 if (start + len > 4.01) {
-                    alert('小節（4拍）をオーバーします！長さを変更するか位置を調整してください。');
+                    alert('小節（4拍）をオーバーします！');
                     return;
                 }
 
                 notesData.push({
                     id: noteId++,
                     part: activePart,
-                    name: noteName,
+                    baseName: baseName,
+                    accidental: 'none', // none, sharp, double-sharp, flat, double-flat
                     start: start,
                     length: len,
                     isRest: false
@@ -546,7 +546,6 @@
                 return;
             }
 
-            // 5. Rest Input (0)
             if (key === '0') {
                 const len = getCalculatedLength();
                 const start = currentPos[activePart];
@@ -554,7 +553,8 @@
                 notesData.push({
                     id: noteId++,
                     part: activePart,
-                    name: '休',
+                    baseName: '休',
+                    accidental: 'none',
                     start: start,
                     length: len,
                     isRest: true
@@ -565,23 +565,40 @@
                 return;
             }
 
-            // 6. Accidental Modify (s -> #, f -> b)
-            if (key === 's' || key === 'f') {
-                // Find last non-rest note for active part
+            // Sharp Toggle (s)
+            if (key === 's') {
                 const partNotes = notesData.filter(n => n.part === activePart && !n.isRest);
                 if (partNotes.length > 0) {
                     const lastNote = partNotes[partNotes.length - 1];
-                    if (key === 's' && !lastNote.name.includes('#')) {
-                        lastNote.name += '#';
-                    } else if (key === 'f' && !lastNote.name.includes('♭')) {
-                        lastNote.name += '♭';
+                    if (lastNote.accidental === 'none' || lastNote.accidental === 'flat' || lastNote.accidental === 'double-flat') {
+                        lastNote.accidental = 'sharp';
+                    } else if (lastNote.accidental === 'sharp') {
+                        lastNote.accidental = 'double-sharp';
+                    } else if (lastNote.accidental === 'double-sharp') {
+                        lastNote.accidental = 'none';
                     }
                     renderAll();
                 }
                 return;
             }
 
-            // 7. Backspace Delete
+            // Flat Toggle (f)
+            if (key === 'f') {
+                const partNotes = notesData.filter(n => n.part === activePart && !n.isRest);
+                if (partNotes.length > 0) {
+                    const lastNote = partNotes[partNotes.length - 1];
+                    if (lastNote.accidental === 'none' || lastNote.accidental === 'sharp' || lastNote.accidental === 'double-sharp') {
+                        lastNote.accidental = 'flat';
+                    } else if (lastNote.accidental === 'flat') {
+                        lastNote.accidental = 'double-flat';
+                    } else if (lastNote.accidental === 'double-flat') {
+                        lastNote.accidental = 'none';
+                    }
+                    renderAll();
+                }
+                return;
+            }
+
             if (e.key === 'Backspace') {
                 const partNotes = notesData.filter(n => n.part === activePart);
                 if (partNotes.length > 0) {
@@ -607,7 +624,6 @@
             }
         }
 
-        // Initial Setup
         renderAll();
     </script>
 </body>
